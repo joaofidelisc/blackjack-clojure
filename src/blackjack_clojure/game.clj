@@ -1,4 +1,5 @@
-(ns blackjack-clojure.game)
+(ns blackjack-clojure.game
+  (:require [blackjack-clojure.interface :as interface]))
 
 ; Usuário pode escolher uma carta com os valores entre 1 e 13
 ; A, 2, 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K
@@ -37,5 +38,11 @@
      :points      points
      }))
 
+(defn display-cards [player]
+  (doseq [card (:cards player)]
+
+    (println (interface/create-card-text card))))
+
 (println (player "João"))
 (println (player "Dealer"))
+(display-cards (player "João"))
