@@ -7,6 +7,7 @@
 
 (defn convert-value [value]
   (case value
+    1  "A"
     11 "J"
     12 "Q"
     13 "K"
@@ -32,8 +33,3 @@
            "\n|________|")
       )
    ))
-
-(defn display-card []
-  (println (create-card-text 13)))
-
-(display-card)
