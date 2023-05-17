@@ -10,3 +10,11 @@ As regras adotadas para o desenvolvimento do jogo foram:
 - Será atribuido o valor 11 ao A, porém se passar de 21, ele passará a valer 1. Por exemplo, caso o jogador atual tenha em mãos A e 10, poderá valer 11 ou 21.
 
 *O valor do recorde de acordo com o nº de vitórias seguidas é armazenado.
+
+Foi utilizado o MongoDB (https://www.mongodb.com/docs/) e, para isso, caso este repositório seja clonado, é necessário tê-lo instalado e configurado em sua máquina. Foi criado o banco de dados "blackjack", juntamente com a coleção "gameresults", a qual é responsável por armazenar os resultados das partidas. As informações armazenadas são:
+- player-name (string);
+- number-of-wins (number);
+- consecutive-wins (number);
+- won-the-last-round (boolean).
+
+Ao iniciar a partida, o usuário digta o seu nome e esse objeto usuário é inserido no banco de dados (caso não exista).
