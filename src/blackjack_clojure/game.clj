@@ -106,7 +106,8 @@
     (def player-after-game (game player-user player-decision-continue))
     (def partial-dealer-decision-continue (partial opponent-decision-continue (:points player-after-game)))
     (def dealer-after-game (game player-opponent partial-dealer-decision-continue))
-    (end-game player-after-game dealer-after-game [conn db])))
+    (end-game player-after-game dealer-after-game [conn db])
+    (mongodb/get-data-from-database player-after-game [conn db])))
 
 
 (start-game)

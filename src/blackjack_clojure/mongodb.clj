@@ -71,7 +71,9 @@
     (let [player-name (:player-name player)
           results (mc/find-one db "gameresults" {:player-name player-name})
           player-name (get results "player-name")
-          wins (-> results (.getLong "number-of-wins"))]
-      (println (str "Nome: " player-name ";"))
+          wins (-> results (.getLong "number-of-wins"))
+          consecutive-wins (-> results (.getLong "consecutive-wins"))]
+      (println "Esses são seus dados de jogo:")
       (println (str "Vitórias: " wins))
+      (println (str "Vitórias consecutivas: " consecutive-wins))
       )))
