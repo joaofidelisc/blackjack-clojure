@@ -1,11 +1,7 @@
 (ns blackjack-clojure.game
   (:require [blackjack-clojure.interface :as interface]
-            [monger.core :as mg]
-            [monger.collection :as mc]
-            [monger.operators :refer :all])
-  (:import org.bson.types.ObjectId))
-
-
+            [blackjack-clojure.mongodb :as mongodb]
+            [clojure.string :as str]))
 
 
 (defn new-card []
@@ -73,17 +69,8 @@
         (recur player-with-more-cards fn-decision-continue))
       player)))
 
-(defn update-wins-from-database [player]
-  (let [conn (mg/connect)
-        db   (mg/get-db conn "blackjack")
-        coll "gameresults"
-        player-name (:player-name player)]
-    (mc/update db coll {:player-name player-name}
-               {"$inc" {:number-of-wins 1}})
-    (mc/update db coll {:player-name player-name}
-               {"$set" {:consecutive-wins 1}})))
 
-(defn end-game [player dealer]
+(defn end-game [player dealer [conn db]]
   (let [player-points (:points player)
         dealer-points (:points dealer)
         player-name (:player-name player)
@@ -92,69 +79,35 @@
                   (and (> player-points 21) (> dealer-points)) "Ambos perderam\n"
                   (= player-points dealer-points) "Empate\n"
                   (> player-points 21) (str dealer-name " ganhou o jogo\n")
-                  (> dealer-points 21) (do
-                                         (update-wins-from-database player)
-                                         (str player-name " ganhou o jogo\n"))
-                  (> player-points dealer-points) (do
-                                                    (update-wins-from-database player)
-                                                    (str player-name " ganhou o jogo\n"))
+                  (> dealer-points 21) (str player-name " ganhou o jogo\n")
+                  (> player-points dealer-points) (str player-name " ganhou o jogo\n")
                   (> dealer-points player-points) (str dealer-name " ganhou o jogo\n"))]
-    (display-cards player)
+
     (display-cards dealer)
-    (print message)))
-
-
-(defn user-exists [player]
-  (let [conn (mg/connect)
-        db (mg/get-db conn "blackjack")
-        player-name (:player-name player)
-        results (mc/find-one db "gameresults" {:player-name player-name})]
-    (if (nil? results) false true)
-    ))
-
-
-(defn insert-data-database [player]
-  (let [conn (mg/connect)
-        db   (mg/get-db conn "blackjack")
-        player-name (:player-name player)]
-    (mc/insert db "gameresults" {
-                                 :_id (ObjectId.)
-                                 :player-name player-name
-                                 :number-of-wins 0
-                                 :consecutive-wins 0})))
-
-
-(defn show-data-from-database [player]
-  (if (user-exists player)
-    (let [conn (mg/connect)
-          db (mg/get-db conn "blackjack")
-          player-name (:player-name player)
-          results (mc/find-one db "gameresults" {:player-name player-name})
-          player-name (get results "player-name")
-          wins (-> results (.getLong "number-of-wins"))]
-      (println (str "Nome: " player-name ";"))
-      (println (str "Vitórias: " wins))
+    (display-cards player)
+    (print message)
+    (if (str/includes? message player-name)
+      (mongodb/update-wins-from-database player true [conn db])
+      (mongodb/update-wins-from-database player false [conn db])
       )))
 
 
 (defn start-game []
   (println "Seja bem-vindo(a) ao Blackjack!\nPor favor, insira o seu nome para iniciar um novo jogo ou carregar as informações de um jogo anterior.")
-  (let [player-name (read-line)]
+  (let [player-name (read-line)
+        [conn db] (mongodb/establish-connection)]
     (def player-user (player player-name))
     (def player-opponent (player "Dealer"))
-    (if (not (user-exists player-user))
-      (insert-data-database player-user)))
-  (println "--------------------------------")
-  (display-cards player-user)
-  (display-cards player-opponent)
-  (def player-after-game (game player-user player-decision-continue))
-  (def partial-dealer-decision-continue (partial opponent-decision-continue (:points player-after-game)))
-  (def dealer-after-game (game player-opponent partial-dealer-decision-continue))
-  (end-game player-after-game dealer-after-game))
+    (if (not (mongodb/get-user-exists player-user [conn db]))
+      (mongodb/insert-data-database player-user [conn db]))
+    (println "--------------------------------")
+    (display-cards player-opponent)
+    (display-cards player-user)
+    (def player-after-game (game player-user player-decision-continue))
+    (def partial-dealer-decision-continue (partial opponent-decision-continue (:points player-after-game)))
+    (def dealer-after-game (game player-opponent partial-dealer-decision-continue))
+    (end-game player-after-game dealer-after-game [conn db])))
 
-;(update-wins-from-database player-user)
-;(insert-data-database player-user)
-;(show-data-from-database player-user)
 
 (start-game)
 
